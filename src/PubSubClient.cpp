@@ -7,6 +7,13 @@
 #include "PubSubClient.h"
 #include "Arduino.h"
 
+bool PubSubClient::trigger(unsigned long ts, unsigned long last, unsigned long interval) {
+    const unsigned long next = last + interval;
+    const uint8_t mask = (ts>=next)|((next<last)<<1)|((ts<last)<<2);
+    const uint8_t res  = (mask & 0xFE) ? ((mask==0x4)|(mask==0x7)) : mask;
+    return (res>0) ? true : false;
+}
+
 PubSubClient::PubSubClient() {
     this->_state = MQTT_DISCONNECTED;
     this->_client = NULL;
@@ -203,7 +210,8 @@ boolean PubSubClient::connect(const char *id, const char *user, const char *pass
 
             while (!_client->available()) {
                 const unsigned long t = millis();
-                if (t >= (lastInActivity+(MQTT_SOCKET_TIMEOUT*1000UL))) {
+                //if (t >= (lastInActivity+(MQTT_SOCKET_TIMEOUT*1000UL))) {
+                if (trigger(t, lastInActivity, MQTT_SOCKET_TIMEOUT*1000UL)) {
                     _state = MQTT_CONNECTION_TIMEOUT;
                     _client->stop();
 
@@ -242,11 +250,12 @@ boolean PubSubClient::connect(const char *id, const char *user, const char *pass
 
 // reads a byte into result
 boolean PubSubClient::readByte(uint8_t * result) {
-   uint32_t previousMillis = millis();
+   const unsigned long previousMillis = millis();
    while(!_client->available()) {
      yield();
-     uint32_t currentMillis = millis();
-     if(currentMillis - previousMillis >= ((int32_t) MQTT_SOCKET_TIMEOUT * 1000)){
+     const unsigned long currentMillis = millis();
+     //if(currentMillis - previousMillis >= ((int32_t) MQTT_SOCKET_TIMEOUT * 1000)){
+     if (trigger(currentMillis, previousMillis, MQTT_SOCKET_TIMEOUT*1000)) {
        return false;
      }
    }
@@ -323,8 +332,9 @@ uint16_t PubSubClient::readPacket(uint8_t* lengthLength) {
 
 boolean PubSubClient::loop() {
     if (connected()) {
-        unsigned long t = millis();
-        if ((t > (lastInActivity+(MQTT_KEEPALIVE*1000UL))) || (t > (lastOutActivity+(MQTT_KEEPALIVE*1000UL)))) {
+        const unsigned long t = millis();
+        //if ((t > (lastInActivity+(MQTT_KEEPALIVE*1000UL))) || (t > (lastOutActivity+(MQTT_KEEPALIVE*1000UL)))) {
+        if (trigger(t, lastInActivity, MQTT_KEEPALIVE*1000UL) || trigger(t, lastOutActivity, MQTT_KEEPALIVE*1000UL)) {
             if (pingOutstanding) {
                 this->_state = MQTT_CONNECTION_TIMEOUT;
                 _client->stop();

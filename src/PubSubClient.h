@@ -116,6 +116,8 @@ private:
    int _state;
    uint8_t protocolType;
 
+   bool trigger(unsigned long ts, unsigned long last, unsigned long interval);
+
 public:
    PubSubClient();
    PubSubClient(Client& client);
