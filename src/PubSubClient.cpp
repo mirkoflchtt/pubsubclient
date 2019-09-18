@@ -8,14 +8,7 @@
 #include "Arduino.h"
 
 bool PubSubClient::trigger(unsigned long ts, unsigned long last, unsigned long interval) {
-#if 0
-    const unsigned long next = last + interval;
-    const uint8_t mask = (ts>=next)|((next<last)<<1)|((ts<last)<<2);
-    const uint8_t res  = (mask & 0xFE) ? ((mask==0x4)|(mask==0x7)) : mask;
-    return (res>0) ? true : false;
-#else
     return ((ts-last)>=interval);
-#endif
 }
 
 PubSubClient::PubSubClient() {
