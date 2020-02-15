@@ -115,7 +115,8 @@ private:
    Stream* stream;
    int _state;
    uint8_t protocolType;
-
+   unsigned long socketTimeout;
+   
    bool trigger(unsigned long ts, unsigned long last, unsigned long interval);
 
 public:
